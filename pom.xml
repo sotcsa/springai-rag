@@ -102,6 +102,19 @@
             <version>${spring-ai.version}</version>
         </dependency>
 
+        <!-- Apache Tika 2.9.2 (override Spring AI's transitive 3.1.0) -->
+        <!-- Fixes NoSuchMethodError: setIgnoreContentStreamSpaceGlyphs -->
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-core</artifactId>
+            <version>${tika.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.tika</groupId>
+            <artifactId>tika-parsers-standard-package</artifactId>
+            <version>${tika.version}</version>
+        </dependency>
+
         <!-- Oracle JDBC Driver -->
         <dependency>
             <groupId>com.oracle.database.jdbc</groupId>
