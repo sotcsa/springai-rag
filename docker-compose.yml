@@ -40,11 +40,11 @@ services:
     #           count: 1
     #           capabilities: [gpu]
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:11434/" ]
-      interval: 15s
-      timeout: 5s
+      test: [ "CMD", "bash", "-c", "exec 3<>/dev/tcp/127.0.0.1/11434 && echo -e 'GET / HTTP/1.0\\r\\n\\r\\n' >&3 && cat <&3 | head -1 | grep -q 'HTTP'" ]
+      interval: 30s
+      timeout: 10s
       retries: 5
-      start_period: 30s
+      start_period: 60s
     restart: unless-stopped
 
   # ========================================
