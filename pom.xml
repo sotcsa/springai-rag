@@ -75,6 +75,12 @@
             <artifactId>spring-ai-ollama</artifactId>
         </dependency>
 
+        <!-- Spring AI - Chat Client -->
+        <dependency>
+            <groupId>org.springframework.ai</groupId>
+            <artifactId>spring-ai-client-chat</artifactId>
+        </dependency>
+
         <!-- Spring AI - Oracle 23ai Vector Store -->
         <dependency>
             <groupId>org.springframework.ai</groupId>
