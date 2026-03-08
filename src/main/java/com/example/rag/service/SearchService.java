@@ -48,6 +48,7 @@ public class SearchService {
     public SearchService(VectorStore vectorStore, ChatModel chatModel) {
         this.vectorStore = vectorStore;
         this.chatClient = ChatClient.builder(chatModel).build();
+        log.info("SearchService initialized with ChatModel: {}", chatModel.getClass().getName());
     }
 
     /**
