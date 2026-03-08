@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<body>
+    <!-- Search results fragment -->
+    <div th:fragment="search-results">
+        <div class="results-container" th:if="${result != null}">
+            <!-- Results Header -->
+            <div class="results-header">
+                <div class="results-meta">
+                    <span class="results-count">
+                        <i data-lucide="layers"></i>
+                        <span th:text="${#lists.size(result.chunks)}">0</span> találat
+                    </span>
+                    <span class="results-time">
+                        <i data-lucide="clock"></i>
+                        <span th:text="${result.searchTimeMs}">0</span> ms
+                    </span>
+                    <span class="results-mode badge"
+                        th:classappend="${result.mode.name() == 'RAG' ? 'badge-accent' : 'badge-neutral'}"
+                        th:text="${result.mode.name() == 'RAG' ? 'RAG mód' : 'Chunk mód'}">
+                        Chunk mód
+                    </span>
+                </div>
+            </div>
+
+            <!-- RAG Answer -->
+            <div th:if="${result.llmAnswer != null}" class="rag-answer-card">
+                <div class="rag-answer-header">
+                    <div class="rag-icon"><i data-lucide="sparkles"></i></div>
+                    <h3>AI Válasz</h3>
+                </div>
+                <div class="rag-answer-content">
+                    <p th:text="${result.llmAnswer}">AI válasz...</p>
+                </div>
+            </div>
+
+            <!-- Chunk Results -->
+            <div class="chunks-list" th:if="${not #lists.isEmpty(result.chunks)}">
+                <h3 class="chunks-title">
+                    <i data-lucide="file-text"></i>
+                    Releváns szövegrészletek
+                </h3>
+                <div th:each="chunk, iterStat : ${result.chunks}" class="chunk-card">
+                    <div class="chunk-header">
+                        <span class="chunk-index" th:text="'#' + ${iterStat.count}">#1</span>
+                        <span class="chunk-source">
+                            <i data-lucide="file" style="width:14px;height:14px"></i>
+                            <span th:text="${chunk.documentName}">document.pdf</span>
+                        </span>
+                        <span class="chunk-score" th:if="${chunk.score > 0}">
+                            <span
+                                th:text="${'Relevancia: ' + #numbers.formatDecimal(chunk.score * 100, 0, 1) + '%'}">85.0%</span>
+                        </span>
+                    </div>
+                    <div class="chunk-content">
+                        <p th:text="${chunk.content}">Chunk content...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- No Results -->
+            <div th:if="${#lists.isEmpty(result.chunks)}" class="empty-state">
+                <i data-lucide="search-x"></i>
+                <h3>Nincs találat</h3>
+                <p>A keresési feltételeknek megfelelő dokumentum nem található. Próbálj más kulcsszavakat használni.</p>
+            </div>
+        </div>
+        <script>lucide.createIcons();</script>
+    </div>
+</body>
+
+</html>

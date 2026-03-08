@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="hu">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Szemantikus keresés | RAG Keresőrendszer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="/webjars/htmx.org/2.0.4/dist/htmx.min.js"></script>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="main-nav">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">
+                <div class="nav-logo"><i data-lucide="brain-circuit"></i></div>
+                <span class="nav-title">RAG<span class="nav-title-accent">Search</span></span>
+            </a>
+            <div class="nav-links">
+                <a href="/" class="nav-link"><i data-lucide="layout-dashboard"></i><span>Áttekintés</span></a>
+                <a href="/documents" class="nav-link"><i data-lucide="upload"></i><span>Feltöltés</span></a>
+                <a href="/search" class="nav-link active"><i data-lucide="search"></i><span>Keresés</span></a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1><i data-lucide="search"></i> Szemantikus keresés</h1>
+            <p>Keress a feltöltött dokumentumok között szemantikus hasonlóság alapján.</p>
+        </div>
+
+        <!-- Search Form -->
+        <div class="search-section">
+            <form id="search-form" hx-post="/search" hx-target="#search-results" hx-swap="innerHTML"
+                hx-indicator="#search-loading">
+
+                <div class="search-input-wrapper">
+                    <div class="search-input-group">
+                        <i data-lucide="search" class="search-input-icon"></i>
+                        <textarea name="query" id="search-query" class="search-input"
+                            placeholder="Írd be a keresési kérdésedet..." rows="2" required></textarea>
+                    </div>
+                </div>
+
+                <!-- Search Options -->
+                <div class="search-options">
+                    <div class="search-mode-selector">
+                        <label class="mode-option">
+                            <input type="radio" name="mode" value="CHUNKS_ONLY" checked id="mode-chunks">
+                            <div class="mode-card">
+                                <div class="mode-icon"><i data-lucide="layers"></i></div>
+                                <div class="mode-info">
+                                    <span class="mode-title">Chunk keresés</span>
+                                    <span class="mode-desc">Releváns szövegrészletek visszaadása</span>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="mode-option">
+                            <input type="radio" name="mode" value="RAG" id="mode-rag">
+                            <div class="mode-card">
+                                <div class="mode-icon"><i data-lucide="message-square"></i></div>
+                                <div class="mode-info">
+                                    <span class="mode-title">RAG keresés</span>
+                                    <span class="mode-desc">AI válasz a megtalált kontextus alapján</span>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="search-params">
+                        <div class="param-group">
+                            <label for="topK">Találatok száma:</label>
+                            <select name="topK" id="topK" class="param-select">
+                                <option value="3">3</option>
+                                <option value="5" selected>5</option>
+                                <option value="10">10</option>
+                                <option value="15">15</option>
+                                <option value="20">20</option>
+                            </select>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary btn-lg" id="btn-search">
+                            <i data-lucide="search"></i>
+                            Keresés
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <!-- Loading Indicator -->
+            <div id="search-loading" class="search-loading htmx-indicator">
+                <div class="loading-spinner"></div>
+                <span>Keresés folyamatban...</span>
+            </div>
+
+            <!-- Search Results -->
+            <div id="search-results"></div>
+        </div>
+    </main>
+
+    <script th:src="@{/js/app.js}"></script>
+    <script>lucide.createIcons();</script>
+</body>
+
+</html>

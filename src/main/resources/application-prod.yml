@@ -1,0 +1,36 @@
+# ========================================
+# Production Profile
+# ========================================
+spring:
+  thymeleaf:
+    cache: true
+
+  jpa:
+    show-sql: false
+
+  # Oracle ADB connection (use wallet or TNS)
+  datasource:
+    url: ${ORACLE_JDBC_URL}
+    username: ${ORACLE_USER}
+    password: ${ORACLE_PASSWORD}
+    hikari:
+      minimum-idle: 5
+      maximum-pool-size: 20
+      idle-timeout: 60000
+
+  ai:
+    ollama:
+      base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+      chat:
+        options:
+          model: ${OLLAMA_CHAT_MODEL:llama3.2}
+          temperature: 0.2
+      embedding:
+        options:
+          model: ${OLLAMA_EMBEDDING_MODEL:nomic-embed-text}
+
+logging:
+  level:
+    root: WARN
+    com.example.rag: INFO
+    org.springframework.ai: WARN

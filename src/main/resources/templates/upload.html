@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="hu">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dokumentum feltöltés | RAG Keresőrendszer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="/webjars/htmx.org/2.0.4/dist/htmx.min.js"></script>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="main-nav">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">
+                <div class="nav-logo"><i data-lucide="brain-circuit"></i></div>
+                <span class="nav-title">RAG<span class="nav-title-accent">Search</span></span>
+            </a>
+            <div class="nav-links">
+                <a href="/" class="nav-link"><i data-lucide="layout-dashboard"></i><span>Áttekintés</span></a>
+                <a href="/documents" class="nav-link active"><i data-lucide="upload"></i><span>Feltöltés</span></a>
+                <a href="/search" class="nav-link"><i data-lucide="search"></i><span>Keresés</span></a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="page-header">
+            <h1><i data-lucide="upload"></i> Dokumentum feltöltés</h1>
+            <p>Töltsd fel PDF, TXT vagy más szöveges dokumentumaidat a feldolgozáshoz.</p>
+        </div>
+
+        <!-- Upload Area -->
+        <div class="upload-section">
+            <div class="upload-dropzone" id="dropzone">
+                <div class="dropzone-content">
+                    <div class="dropzone-icon">
+                        <i data-lucide="cloud-upload"></i>
+                    </div>
+                    <h3>Húzd ide a fájlokat</h3>
+                    <p>vagy kattints a tallózáshoz</p>
+                    <div class="dropzone-formats">
+                        <span class="format-badge">PDF</span>
+                        <span class="format-badge">TXT</span>
+                        <span class="format-badge">DOCX</span>
+                        <span class="format-badge">MD</span>
+                        <span class="format-badge">CSV</span>
+                    </div>
+                    <p class="dropzone-limit">Maximum fájlméret: 50MB</p>
+                </div>
+                <input type="file" id="file-input" accept=".pdf,.txt,.md,.csv,.docx" multiple style="display:none">
+            </div>
+
+            <!-- Upload Progress -->
+            <div id="upload-status" class="upload-status-area" style="display:none;"></div>
+        </div>
+
+        <!-- Document List -->
+        <div class="documents-section">
+            <div class="section-header">
+                <h2><i data-lucide="files"></i> Feltöltött dokumentumok</h2>
+                <button class="btn btn-ghost btn-sm" hx-get="/documents/list" hx-target="#document-list-body"
+                    hx-swap="innerHTML" id="btn-refresh-docs">
+                    <i data-lucide="refresh-cw"></i>
+                    Frissítés
+                </button>
+            </div>
+
+            <div th:if="${#lists.isEmpty(documents)}" class="empty-state" id="empty-state">
+                <i data-lucide="inbox"></i>
+                <h3>Még nincsenek feltöltött dokumentumok</h3>
+                <p>Húzz ide egy fájlt vagy kattints a feltöltési területre.</p>
+            </div>
+
+            <div th:if="${not #lists.isEmpty(documents)}" class="documents-table-wrapper">
+                <table class="documents-table">
+                    <thead>
+                        <tr>
+                            <th>Fájlnév</th>
+                            <th>Méret</th>
+                            <th>Chunk-ok</th>
+                            <th>Állapot</th>
+                            <th>Dátum</th>
+                            <th>Műveletek</th>
+                        </tr>
+                    </thead>
+                    <tbody id="document-list-body">
+                        <tr th:each="doc : ${documents}" th:id="'doc-' + ${doc.id}">
+                            <td>
+                                <div class="doc-name">
+                                    <i data-lucide="file-text" class="doc-icon"></i>
+                                    <span th:text="${doc.fileName}">file.pdf</span>
+                                </div>
+                            </td>
+                            <td th:text="${#numbers.formatDecimal(doc.fileSize / 1024.0, 0, 1)} + ' KB'">100 KB</td>
+                            <td th:text="${doc.chunkCount != null ? doc.chunkCount : '-'}">-</td>
+                            <td>
+                                <span class="badge" th:classappend="${doc.status.name() == 'COMPLETED' ? 'badge-success' : 
+                                                       (doc.status.name() == 'PROCESSING' or doc.status.name() == 'PENDING') ? 'badge-warning' : 
+                                                       'badge-danger'}" th:text="${doc.status.name() == 'COMPLETED' ? 'Kész' : 
+                                                doc.status.name() == 'PROCESSING' ? 'Feldolgozás...' : 
+                                                doc.status.name() == 'PENDING' ? 'Várakozik' : 'Sikertelen'}">
+                                    Kész
+                                </span>
+                                <span th:if="${doc.errorMessage != null}" class="error-hint"
+                                    th:title="${doc.errorMessage}">
+                                    <i data-lucide="info" style="width:14px;height:14px"></i>
+                                </span>
+                            </td>
+                            <td th:text="${#temporals.format(doc.createdAt, 'yyyy.MM.dd HH:mm')}">2024.01.01</td>
+                            <td>
+                                <button class="btn btn-ghost btn-sm btn-danger-ghost"
+                                    th:attr="hx-delete='/documents/' + ${doc.id}"
+                                    hx-confirm="Biztosan törölni szeretnéd ezt a dokumentumot?"
+                                    th:attr="hx-target='#doc-' + ${doc.id}" hx-swap="outerHTML swap:0.3s">
+                                    <i data-lucide="trash-2" style="width:14px;height:14px"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script th:src="@{/js/app.js}"></script>
+    <script>lucide.createIcons();</script>
+</body>
+
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="RAG Dokumentum Keresőrendszer - Szemantikus keresés Oracle 23ai és helyi AI modellekkel">
+    <title th:text="${pageTitle != null ? pageTitle + ' | RAG Keresőrendszer' : 'RAG Dokumentum Keresőrendszer'}">RAG Keresőrendszer</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- HTMX -->
+    <script src="/webjars/htmx.org/2.0.4/dist/htmx.min.js"></script>
+
+    <!-- App CSS -->
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="main-nav">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">
+                <div class="nav-logo">
+                    <i data-lucide="brain-circuit"></i>
+                </div>
+                <span class="nav-title">RAG<span class="nav-title-accent">Search</span></span>
+            </a>
+            <div class="nav-links">
+                <a th:href="@{/}" class="nav-link" th:classappend="${#httpServletRequest.requestURI == '/' ? 'active' : ''}">
+                    <i data-lucide="layout-dashboard"></i>
+                    <span>Áttekintés</span>
+                </a>
+                <a th:href="@{/documents}" class="nav-link" th:classappend="${#httpServletRequest.requestURI.startsWith('/documents') ? 'active' : ''}">
+                    <i data-lucide="upload"></i>
+                    <span>Feltöltés</span>
+                </a>
+                <a th:href="@{/search}" class="nav-link" th:classappend="${#httpServletRequest.requestURI.startsWith('/search') ? 'active' : ''}">
+                    <i data-lucide="search"></i>
+                    <span>Keresés</span>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div th:replace="${content != null ? content : '~{::main-content}'}">
+            <div th:fragment="main-content" layout:fragment="content"></div>
+        </div>
+    </main>
+
+    <!-- App JS -->
+    <script th:src="@{/js/app.js}"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+</html>

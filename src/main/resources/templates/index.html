@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="hu">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="RAG Dokumentum Keresőrendszer - Szemantikus keresés helyi AI modellekkel">
+    <title>RAG Dokumentum Keresőrendszer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="/webjars/htmx.org/2.0.4/dist/htmx.min.js"></script>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+
+<body>
+    <!-- Navigation -->
+    <nav class="navbar" id="main-nav">
+        <div class="nav-container">
+            <a href="/" class="nav-brand">
+                <div class="nav-logo"><i data-lucide="brain-circuit"></i></div>
+                <span class="nav-title">RAG<span class="nav-title-accent">Search</span></span>
+            </a>
+            <div class="nav-links">
+                <a href="/" class="nav-link active"><i data-lucide="layout-dashboard"></i><span>Áttekintés</span></a>
+                <a href="/documents" class="nav-link"><i data-lucide="upload"></i><span>Feltöltés</span></a>
+                <a href="/search" class="nav-link"><i data-lucide="search"></i><span>Keresés</span></a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <!-- Hero Section -->
+        <section class="hero">
+            <div class="hero-content">
+                <div class="hero-badge">
+                    <i data-lucide="sparkles"></i>
+                    <span>Helyi AI · Oracle 23ai · Szemantikus Keresés</span>
+                </div>
+                <h1 class="hero-title">
+                    Intelligens Dokumentum<br>
+                    <span class="gradient-text">Keresőrendszer</span>
+                </h1>
+                <p class="hero-subtitle">
+                    Töltsd fel dokumentumaidat, és keresd meg a releváns információkat
+                    szemantikus kereséssel vagy AI-alapú válaszgenerálással – teljesen lokálisan.
+                </p>
+                <div class="hero-actions">
+                    <a href="/documents" class="btn btn-primary btn-lg" id="btn-upload-hero">
+                        <i data-lucide="upload"></i>
+                        Dokumentum feltöltése
+                    </a>
+                    <a href="/search" class="btn btn-secondary btn-lg" id="btn-search-hero">
+                        <i data-lucide="search"></i>
+                        Keresés indítása
+                    </a>
+                </div>
+            </div>
+        </section>
+
+        <!-- Stats Cards -->
+        <section class="stats-section">
+            <div class="stats-grid">
+                <div class="stat-card" id="stat-total">
+                    <div class="stat-icon stat-icon-blue">
+                        <i data-lucide="file-text"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" th:text="${stats.total}">0</span>
+                        <span class="stat-label">Összes dokumentum</span>
+                    </div>
+                </div>
+                <div class="stat-card" id="stat-completed">
+                    <div class="stat-icon stat-icon-green">
+                        <i data-lucide="check-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" th:text="${stats.completed}">0</span>
+                        <span class="stat-label">Feldolgozott</span>
+                    </div>
+                </div>
+                <div class="stat-card" id="stat-processing">
+                    <div class="stat-icon stat-icon-amber">
+                        <i data-lucide="loader"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" th:text="${stats.processing + stats.pending}">0</span>
+                        <span class="stat-label">Feldolgozás alatt</span>
+                    </div>
+                </div>
+                <div class="stat-card" id="stat-failed">
+                    <div class="stat-icon stat-icon-red">
+                        <i data-lucide="alert-circle"></i>
+                    </div>
+                    <div class="stat-info">
+                        <span class="stat-value" th:text="${stats.failed}">0</span>
+                        <span class="stat-label">Sikertelen</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recent Documents -->
+        <section class="documents-section" th:if="${not #lists.isEmpty(documents)}">
+            <div class="section-header">
+                <h2><i data-lucide="clock"></i> Legutóbbi dokumentumok</h2>
+            </div>
+            <div class="documents-table-wrapper">
+                <table class="documents-table" id="documents-table">
+                    <thead>
+                        <tr>
+                            <th>Fájlnév</th>
+                            <th>Típus</th>
+                            <th>Méret</th>
+                            <th>Chunk-ok</th>
+                            <th>Állapot</th>
+                            <th>Dátum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="doc : ${documents}">
+                            <td>
+                                <div class="doc-name">
+                                    <i data-lucide="file-text" class="doc-icon"></i>
+                                    <span th:text="${doc.fileName}">document.pdf</span>
+                                </div>
+                            </td>
+                            <td><span class="badge badge-neutral" th:text="${doc.contentType}">PDF</span></td>
+                            <td th:text="${#numbers.formatDecimal(doc.fileSize / 1024.0, 0, 1)} + ' KB'">100 KB</td>
+                            <td th:text="${doc.chunkCount != null ? doc.chunkCount : '-'}">-</td>
+                            <td>
+                                <span class="badge" th:classappend="${doc.status.name() == 'COMPLETED' ? 'badge-success' : 
+                                                       (doc.status.name() == 'PROCESSING' or doc.status.name() == 'PENDING') ? 'badge-warning' : 
+                                                       'badge-danger'}" th:text="${doc.status.name() == 'COMPLETED' ? 'Kész' : 
+                                                doc.status.name() == 'PROCESSING' ? 'Feldolgozás...' : 
+                                                doc.status.name() == 'PENDING' ? 'Várakozik' : 'Sikertelen'}">
+                                    Kész
+                                </span>
+                            </td>
+                            <td th:text="${#temporals.format(doc.createdAt, 'yyyy.MM.dd HH:mm')}">2024.01.01</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features-section">
+            <div class="section-header">
+                <h2><i data-lucide="zap"></i> Funkciók</h2>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon"><i data-lucide="file-up"></i></div>
+                    <h3>Dokumentum feltöltés</h3>
+                    <p>PDF, TXT, DOCX és egyéb formátumok támogatása. Automatikus feldolgozás és indexelés.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i data-lucide="scissors"></i></div>
+                    <h3>Intelligens darabolás</h3>
+                    <p>Token-alapú szövegdarabolás átfedéssel a kontextus megőrzéséhez.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i data-lucide="database"></i></div>
+                    <h3>Oracle 23ai Vector DB</h3>
+                    <p>Vektoros keresés az Oracle 23ai beépített VECTOR adattípusával.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i data-lucide="search"></i></div>
+                    <h3>Szemantikus keresés</h3>
+                    <p>Cosine hasonlóságon alapuló keresés a releváns chunk-ok megtalálásához.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i data-lucide="message-square"></i></div>
+                    <h3>RAG válaszgenerálás</h3>
+                    <p>LLM-alapú válaszgenerálás a megtalált kontextus alapján.</p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon"><i data-lucide="shield-check"></i></div>
+                    <h3>Teljesen lokális</h3>
+                    <p>Minden AI művelet helyben történik Ollama-val. Nincs külső API hívás.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script th:src="@{/js/app.js}"></script>
+    <script>lucide.createIcons();</script>
+</body>
+
+</html>

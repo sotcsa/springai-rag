@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+
+<body>
+    <!-- Document list fragment -->
+    <div th:fragment="document-list">
+        <tr th:each="doc : ${documents}" th:id="'doc-' + ${doc.id}">
+            <td>
+                <div class="doc-name">
+                    <i data-lucide="file-text" class="doc-icon"></i>
+                    <span th:text="${doc.fileName}">file.pdf</span>
+                </div>
+            </td>
+            <td th:text="${#numbers.formatDecimal(doc.fileSize / 1024.0, 0, 1)} + ' KB'">100 KB</td>
+            <td th:text="${doc.chunkCount != null ? doc.chunkCount : '-'}">-</td>
+            <td>
+                <span class="badge" th:classappend="${doc.status.name() == 'COMPLETED' ? 'badge-success' : 
+                                       (doc.status.name() == 'PROCESSING' or doc.status.name() == 'PENDING') ? 'badge-warning' : 
+                                       'badge-danger'}" th:text="${doc.status.name() == 'COMPLETED' ? 'Kész' : 
+                                doc.status.name() == 'PROCESSING' ? 'Feldolgozás...' : 
+                                doc.status.name() == 'PENDING' ? 'Várakozik' : 'Sikertelen'}">
+                    Kész
+                </span>
+            </td>
+            <td th:text="${#temporals.format(doc.createdAt, 'yyyy.MM.dd HH:mm')}">2024.01.01</td>
+            <td>
+                <button class="btn btn-ghost btn-sm btn-danger-ghost" th:attr="hx-delete='/documents/' + ${doc.id}"
+                    hx-confirm="Biztosan törölni szeretnéd?" th:attr="hx-target='#doc-' + ${doc.id}"
+                    hx-swap="outerHTML swap:0.3s">
+                    <i data-lucide="trash-2" style="width:14px;height:14px"></i>
+                </button>
+            </td>
+        </tr>
+    </div>
+</body>
+
+</html>
