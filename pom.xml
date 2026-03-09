@@ -62,11 +62,6 @@
             </dependency>
             <dependency>
                 <groupId>org.apache.pdfbox</groupId>
-                <artifactId>jbig2-imageio</artifactId>
-                <version>${pdfbox.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.apache.pdfbox</groupId>
                 <artifactId>pdfbox-tools</artifactId>
                 <version>${pdfbox.version}</version>
             </dependency>
@@ -145,10 +140,6 @@
                 <exclusion>
                     <groupId>org.apache.pdfbox</groupId>
                     <artifactId>pdfbox-tools</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.pdfbox</groupId>
-                    <artifactId>jempbox</artifactId>
                 </exclusion>
                 <exclusion>
                     <groupId>org.apache.pdfbox</groupId>
