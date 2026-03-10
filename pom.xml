@@ -22,6 +22,7 @@
         <spring-ai.version>1.0.3</spring-ai.version>
         <tika.version>2.9.2</tika.version>
         <pdfbox.version>2.0.31</pdfbox.version>
+        <flyway.version>11.0.1</flyway.version>
     </properties>
 
     <repositories>
@@ -164,6 +165,7 @@
         <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-database-oracle</artifactId>
+            <version>${flyway.version}</version>
         </dependency>
 
         <!-- Lombok -->
