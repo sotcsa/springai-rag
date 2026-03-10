@@ -3,7 +3,7 @@
 
 <body>
     <!-- Document list fragment -->
-    <div th:fragment="document-list">
+    <th:block th:fragment="document-list">
         <tr th:each="doc : ${documents}" th:id="'doc-' + ${doc.id}">
             <td>
                 <div class="doc-name">
@@ -24,14 +24,15 @@
             </td>
             <td th:text="${#temporals.format(doc.createdAt, 'yyyy.MM.dd HH:mm')}">2024.01.01</td>
             <td>
-                <button class="btn btn-ghost btn-sm btn-danger-ghost" th:attr="hx-delete='/documents/' + ${doc.id}"
-                    hx-confirm="Biztosan törölni szeretnéd?" th:attr="hx-target='#doc-' + ${doc.id}"
+                <button class="btn btn-ghost btn-sm btn-danger-ghost"
+                    th:attr="hx-delete='/documents/' + ${doc.id}, hx-target='#doc-' + ${doc.id}"
+                    hx-confirm="Biztosan törölni szeretnéd?"
                     hx-swap="outerHTML swap:0.3s">
                     <i data-lucide="trash-2" style="width:14px;height:14px"></i>
                 </button>
             </td>
         </tr>
-    </div>
+    </th:block>
 </body>
 
 </html>

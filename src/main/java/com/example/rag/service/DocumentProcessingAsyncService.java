@@ -15,6 +15,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +27,7 @@ import java.util.concurrent.CompletableFuture;
 public class DocumentProcessingAsyncService {
 
     private static final Logger log = LoggerFactory.getLogger(DocumentProcessingAsyncService.class);
+    private static final int EMBEDDING_BATCH_SIZE = 25;
 
     private final DocumentRepository documentRepository;
     private final ChunkingService chunkingService;
@@ -43,6 +47,7 @@ public class DocumentProcessingAsyncService {
     @Async("documentProcessingExecutor")
     public CompletableFuture<Void> processDocumentAsync(String docId, Path filePath, String fileName) {
         log.info("Starting async processing for document: {} ({})", fileName, docId);
+        Instant startedAt = Instant.now();
 
         try {
             updateStatus(docId, DocumentEntity.ProcessingStatus.PROCESSING, null);
@@ -52,6 +57,8 @@ public class DocumentProcessingAsyncService {
 
             List<Document> chunks = chunkingService.chunkDocuments(documents);
             log.info("Created {} chunk(s) from {}", chunks.size(), fileName);
+
+            updateChunkProgress(docId, 0);
 
             for (int i = 0; i < chunks.size(); i++) {
                 Document chunk = chunks.get(i);
@@ -63,13 +70,32 @@ public class DocumentProcessingAsyncService {
                 chunks.set(i, new Document(chunk.getText(), metadata));
             }
 
-            vectorStore.add(chunks);
-            log.info("Stored {} chunk(s) with embeddings for {}", chunks.size(), fileName);
+            int processedChunks = 0;
+            int totalChunks = chunks.size();
+            for (int fromIndex = 0; fromIndex < totalChunks; fromIndex += EMBEDDING_BATCH_SIZE) {
+                int toIndex = Math.min(fromIndex + EMBEDDING_BATCH_SIZE, totalChunks);
+                List<Document> batch = new ArrayList<>(chunks.subList(fromIndex, toIndex));
+
+                Instant batchStartedAt = Instant.now();
+                vectorStore.add(batch);
+                long batchMs = Duration.between(batchStartedAt, Instant.now()).toMillis();
+
+                processedChunks = toIndex;
+                updateChunkProgress(docId, processedChunks);
+                log.info("Embedded batch for {}: {}/{} chunk(s), batchSize={}, elapsed={} ms",
+                        fileName, processedChunks, totalChunks, batch.size(), batchMs);
+            }
+
+            log.info("Stored {} chunk(s) with embeddings for {}", totalChunks, fileName);
 
             DocumentEntity doc = documentRepository.findById(docId).orElseThrow();
             doc.setStatus(DocumentEntity.ProcessingStatus.COMPLETED);
-            doc.setChunkCount(chunks.size());
+            doc.setChunkCount(totalChunks);
+            doc.setErrorMessage(null);
             documentRepository.save(doc);
+
+            long totalMs = Duration.between(startedAt, Instant.now()).toMillis();
+            log.info("Finished async processing for {} ({}), total elapsed={} ms", fileName, docId, totalMs);
 
             return CompletableFuture.completedFuture(null);
         } catch (Exception e) {
@@ -111,11 +137,23 @@ public class DocumentProcessingAsyncService {
     private void updateStatus(String docId, DocumentEntity.ProcessingStatus status, String errorMessage) {
         documentRepository.findById(docId).ifPresent(doc -> {
             doc.setStatus(status);
+            if (status == DocumentEntity.ProcessingStatus.PROCESSING) {
+                doc.setChunkCount(0);
+            }
             if (errorMessage != null) {
                 doc.setErrorMessage(errorMessage.length() > 2000
                         ? errorMessage.substring(0, 2000)
                         : errorMessage);
+            } else {
+                doc.setErrorMessage(null);
             }
+            documentRepository.save(doc);
+        });
+    }
+
+    private void updateChunkProgress(String docId, int processedChunks) {
+        documentRepository.findById(docId).ifPresent(doc -> {
+            doc.setChunkCount(processedChunks);
             documentRepository.save(doc);
         });
     }

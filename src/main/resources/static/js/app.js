@@ -6,7 +6,10 @@
 document.addEventListener('DOMContentLoaded', () => {
     initDropzone();
     initSearchForm();
+    initDocumentListAutoRefresh();
 });
+
+let documentListRefreshIntervalId = null;
 
 // ==========================================
 // File Upload & Drag and Drop
@@ -190,7 +193,11 @@ function pollDocumentStatus(documentId, statusElement) {
                         statusElement.style.color = 'var(--danger)';
                         break;
                     case 'PROCESSING':
-                        statusElement.textContent = 'Feldolgozás folyamatban...';
+                        if (doc.chunkCount && doc.chunkCount > 0) {
+                            statusElement.textContent = `Feldolgozás folyamatban... (${doc.chunkCount} chunk kész)`;
+                        } else {
+                            statusElement.textContent = 'Feldolgozás folyamatban...';
+                        }
                         break;
                     case 'PENDING':
                         statusElement.textContent = 'Várakozás a feldolgozásra...';
@@ -205,17 +212,46 @@ function pollDocumentStatus(documentId, statusElement) {
 }
 
 // ==========================================
+// Upload Page - Live Document List
+// ==========================================
+
+function initDocumentListAutoRefresh() {
+    const tableBody = document.getElementById('document-list-body');
+    if (!tableBody) return;
+
+    if (documentListRefreshIntervalId) {
+        clearInterval(documentListRefreshIntervalId);
+    }
+
+    documentListRefreshIntervalId = setInterval(() => {
+        // Skip background tabs to reduce unnecessary server load.
+        if (document.hidden) return;
+        refreshDocumentList();
+    }, 5000);
+}
+
+function refreshDocumentList() {
+    const tableBody = document.getElementById('document-list-body');
+    if (!tableBody) return;
+
+    if (window.htmx && typeof window.htmx.ajax === 'function') {
+        window.htmx.ajax('GET', '/documents/list', {
+            target: '#document-list-body',
+            swap: 'innerHTML'
+        });
+    }
+}
+
+// ==========================================
 // Search Form
 // ==========================================
 
 function initSearchForm() {
     const form = document.getElementById('search-form');
-    if (!form) return;
-
     const queryInput = document.getElementById('search-query');
 
     // Handle Enter key (Shift+Enter for newline)
-    if (queryInput) {
+    if (form && queryInput) {
         queryInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -230,7 +266,7 @@ function initSearchForm() {
         });
     }
 
-    // Re-initialize Lucide icons after HTMX swap
+    // Re-initialize Lucide icons after HTMX swap on every page.
     document.body.addEventListener('htmx:afterSwap', () => {
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();
