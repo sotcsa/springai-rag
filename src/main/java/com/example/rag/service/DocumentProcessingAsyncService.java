@@ -8,6 +8,7 @@ import org.springframework.ai.document.Document;
 import org.springframework.ai.reader.tika.TikaDocumentReader;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.core.io.Resource;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
@@ -21,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CompletableFuture;
 
 @Service
@@ -32,13 +34,17 @@ public class DocumentProcessingAsyncService {
     private final DocumentRepository documentRepository;
     private final ChunkingService chunkingService;
     private final VectorStore vectorStore;
+    private final JdbcTemplate jdbcTemplate;
+    private final Map<String, Boolean> cancellationRequests = new ConcurrentHashMap<>();
 
     public DocumentProcessingAsyncService(DocumentRepository documentRepository,
             ChunkingService chunkingService,
-            VectorStore vectorStore) {
+            VectorStore vectorStore,
+            JdbcTemplate jdbcTemplate) {
         this.documentRepository = documentRepository;
         this.chunkingService = chunkingService;
         this.vectorStore = vectorStore;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     /**
@@ -50,14 +56,17 @@ public class DocumentProcessingAsyncService {
         Instant startedAt = Instant.now();
 
         try {
+            assertDocumentStillProcessable(docId);
             updateStatus(docId, DocumentEntity.ProcessingStatus.PROCESSING, null);
 
             List<Document> documents = parseDocument(filePath, fileName);
             log.info("Parsed {} page(s)/section(s) from {}", documents.size(), fileName);
 
+            assertDocumentStillProcessable(docId);
             List<Document> chunks = chunkingService.chunkDocuments(documents);
             log.info("Created {} chunk(s) from {}", chunks.size(), fileName);
 
+            assertDocumentStillProcessable(docId);
             updateChunkProgress(docId, 0);
 
             for (int i = 0; i < chunks.size(); i++) {
@@ -73,6 +82,8 @@ public class DocumentProcessingAsyncService {
             int processedChunks = 0;
             int totalChunks = chunks.size();
             for (int fromIndex = 0; fromIndex < totalChunks; fromIndex += EMBEDDING_BATCH_SIZE) {
+                assertDocumentStillProcessable(docId);
+
                 int toIndex = Math.min(fromIndex + EMBEDDING_BATCH_SIZE, totalChunks);
                 List<Document> batch = new ArrayList<>(chunks.subList(fromIndex, toIndex));
 
@@ -88,6 +99,7 @@ public class DocumentProcessingAsyncService {
 
             log.info("Stored {} chunk(s) with embeddings for {}", totalChunks, fileName);
 
+            assertDocumentStillProcessable(docId);
             DocumentEntity doc = documentRepository.findById(docId).orElseThrow();
             doc.setStatus(DocumentEntity.ProcessingStatus.COMPLETED);
             doc.setChunkCount(totalChunks);
@@ -98,17 +110,26 @@ public class DocumentProcessingAsyncService {
             log.info("Finished async processing for {} ({}), total elapsed={} ms", fileName, docId, totalMs);
 
             return CompletableFuture.completedFuture(null);
+        } catch (DocumentProcessingCancelledException e) {
+            deleteVectorChunksByDocumentId(docId);
+            log.info("Processing cancelled for document {}: {}", docId, e.getMessage());
+            return CompletableFuture.completedFuture(null);
         } catch (Exception e) {
             log.error("Error processing document {}: {}", docId, e.getMessage(), e);
             updateStatus(docId, DocumentEntity.ProcessingStatus.FAILED, e.getMessage());
             return CompletableFuture.failedFuture(e);
         } finally {
+            cancellationRequests.remove(docId);
             try {
                 Files.deleteIfExists(filePath);
             } catch (IOException e) {
                 log.warn("Failed to delete temp file: {}", filePath, e);
             }
         }
+    }
+
+    public void cancelProcessing(String docId) {
+        cancellationRequests.put(docId, true);
     }
 
     private List<Document> parseDocument(Path filePath, String fileName) {
@@ -156,6 +177,28 @@ public class DocumentProcessingAsyncService {
             doc.setChunkCount(processedChunks);
             documentRepository.save(doc);
         });
+    }
+
+    private void assertDocumentStillProcessable(String docId) {
+        if (Boolean.TRUE.equals(cancellationRequests.get(docId))) {
+            throw new DocumentProcessingCancelledException("Cancellation requested by user");
+        }
+
+        if (!documentRepository.existsById(docId)) {
+            throw new DocumentProcessingCancelledException("Document was deleted during processing");
+        }
+    }
+
+    private int deleteVectorChunksByDocumentId(String documentId) {
+        return jdbcTemplate.update(
+                "DELETE FROM VECTOR_STORE WHERE JSON_VALUE(METADATA, '$.document_id') = ?",
+                documentId);
+    }
+
+    private static class DocumentProcessingCancelledException extends RuntimeException {
+        private DocumentProcessingCancelledException(String message) {
+            super(message);
+        }
     }
 }
 

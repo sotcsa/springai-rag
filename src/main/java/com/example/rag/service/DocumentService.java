@@ -5,7 +5,9 @@ import com.example.rag.model.UploadResponse;
 import com.example.rag.repository.DocumentRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
@@ -32,11 +34,14 @@ public class DocumentService {
 
     private final DocumentRepository documentRepository;
     private final DocumentProcessingAsyncService documentProcessingAsyncService;
+    private final JdbcTemplate jdbcTemplate;
 
     public DocumentService(DocumentRepository documentRepository,
-            DocumentProcessingAsyncService documentProcessingAsyncService) {
+            DocumentProcessingAsyncService documentProcessingAsyncService,
+            JdbcTemplate jdbcTemplate) {
         this.documentRepository = documentRepository;
         this.documentProcessingAsyncService = documentProcessingAsyncService;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     /**
@@ -105,14 +110,23 @@ public class DocumentService {
     /**
      * Delete document and its chunks from vector store.
      */
+    @Transactional
     public void deleteDocument(String id) {
         documentRepository.findById(id).ifPresent(doc -> {
-            // Note: Spring AI VectorStore doesn't have a batch delete by metadata yet,
-            // so we delete the document record only. Vector entries will become orphaned
-            // but won't affect search quality significantly.
+            documentProcessingAsyncService.cancelProcessing(id);
+
+            int deletedVectors = deleteVectorChunksByDocumentId(id);
             documentRepository.delete(doc);
-            log.info("Deleted document: {}", doc.getFileName());
+
+            log.info("Deleted document: {} (id={}), removed {} vector chunk(s)",
+                    doc.getFileName(), id, deletedVectors);
         });
+    }
+
+    private int deleteVectorChunksByDocumentId(String documentId) {
+        return jdbcTemplate.update(
+                "DELETE FROM VECTOR_STORE WHERE JSON_VALUE(METADATA, '$.document_id') = ?",
+                documentId);
     }
 
     /**
