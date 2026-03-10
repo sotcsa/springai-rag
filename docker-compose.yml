@@ -59,8 +59,8 @@ services:
     entrypoint: [ "/bin/sh", "-c" ]
     command:
       - |
-        echo "Pulling embedding model: nomic-embed-text..."
-        curl -s http://ollama:11434/api/pull -d '{"name": "nomic-embed-text"}' | tail -1
+        echo "Pulling embedding model: mxbai-embed-large..."
+        curl -s http://ollama:11434/api/pull -d '{"name": "mxbai-embed-large"}' | tail -1
         echo ""
         echo "Pulling chat model: llama3.2..."
         curl -s http://ollama:11434/api/pull -d '{"name": "llama3.2"}' | tail -1
@@ -84,7 +84,7 @@ services:
       ORACLE_PASSWORD: ${ORACLE_PASSWORD:-ragpassword}
       OLLAMA_BASE_URL: http://ollama:11434
       OLLAMA_CHAT_MODEL: ${OLLAMA_CHAT_MODEL:-llama3.2}
-      OLLAMA_EMBEDDING_MODEL: ${OLLAMA_EMBEDDING_MODEL:-nomic-embed-text}
+      OLLAMA_EMBEDDING_MODEL: ${OLLAMA_EMBEDDING_MODEL:-mxbai-embed-large}
     depends_on:
       oracle-db:
         condition: service_healthy

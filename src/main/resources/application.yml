@@ -41,7 +41,7 @@ spring:
           num-ctx: 8192
       embedding:
         options:
-          model: nomic-embed-text
+          model: mxbai-embed-large
     vectorstore:
       oracle:
         initialize-schema: true
@@ -68,7 +68,7 @@ spring:
 app:
   chunking:
     chunk-size: 800
-    chunk-overlap: 200
+    chunk-overlap: 100
     min-chunk-size: 100
 
 # ========================================

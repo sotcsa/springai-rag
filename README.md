@@ -6,7 +6,7 @@ Production-ready Retrieval-Augmented Generation (RAG) alkalmazás **Spring Boot 
 
 - **📄 Dokumentum feltöltés**: PDF, TXT, DOCX, MD, CSV fájlok támogatása
 - **✂️ Intelligens darabolás**: Token-alapú szövegdarabolás átfedéssel
-- **🔢 Lokális embedding**: Ollama `nomic-embed-text` modell (768 dimenzió)
+- **🔢 Lokális embedding**: Ollama `mxbai-embed-large` modell (1024 dimenzió)
 - **💾 Vector Store**: Oracle 23ai beépített VECTOR típus, IVF index, cosine hasonlóság
 - **🔍 Szemantikus keresés**: Két mód:
   - **Chunk keresés**: Releváns szövegrészletek visszaadása
@@ -94,7 +94,7 @@ docker run -d \
 curl -fsSL https://ollama.com/install.sh | sh
 
 # Modellek letöltése
-ollama pull nomic-embed-text    # Embedding modell (768 dim)
+ollama pull mxbai-embed-large    # Embedding modell (1024 dim)
 ollama pull llama3.2            # Chat modell
 ```
 
@@ -111,7 +111,7 @@ ollama pull llama3.2            # Chat modell
 |-----------|---------------|--------|
 | `spring.ai.ollama.base-url` | `http://localhost:11434` | Ollama szerver URL |
 | `spring.ai.ollama.chat.options.model` | `llama3.2` | Chat modell |
-| `spring.ai.ollama.embedding.options.model` | `nomic-embed-text` | Embedding modell |
+| `spring.ai.ollama.embedding.options.model` | `mxbai-embed-large` | Embedding modell |
 | `app.chunking.chunk-size` | `800` | Chunk méret (token) |
 | `app.chunking.chunk-overlap` | `200` | Chunk átfedés (token) |
 | `spring.servlet.multipart.max-file-size` | `50MB` | Max fájlméret |
@@ -124,7 +124,7 @@ ORACLE_USER=raguser
 ORACLE_PASSWORD=<password>
 OLLAMA_BASE_URL=http://localhost:11434
 OLLAMA_CHAT_MODEL=llama3.2
-OLLAMA_EMBEDDING_MODEL=nomic-embed-text
+OLLAMA_EMBEDDING_MODEL=mxbai-embed-large
 ```
 
 ## 📊 API Végpontok
@@ -160,7 +160,7 @@ curl -X POST http://localhost:8080/search/api \
 |-----------|-------------|
 | Backend | Java 21 + Spring Boot 3.4.x |
 | AI Framework | Spring AI 1.0.3 |
-| Embedding | Ollama + nomic-embed-text |
+| Embedding | Ollama + mxbai-embed-large |
 | LLM | Ollama + llama3.2 |
 | Vector DB | Oracle 23ai (VECTOR típus) |
 | Dokumentum parser | Apache Tika |

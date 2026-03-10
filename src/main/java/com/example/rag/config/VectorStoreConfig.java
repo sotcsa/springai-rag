@@ -17,7 +17,7 @@ public class VectorStoreConfig {
                 .tableName("VECTOR_STORE")
                 .indexType(OracleVectorStoreIndexType.IVF)
                 .distanceType(OracleVectorStoreDistanceType.COSINE)
-                .dimensions(768) // nomic-embed-text dimension
+                .dimensions(1024) // mxbai-embed-large dimension
                 .searchAccuracy(95)
                 .initializeSchema(true)
                 .build();
