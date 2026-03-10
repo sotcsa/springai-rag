@@ -41,7 +41,7 @@ spring:
           num-ctx: 8192
       embedding:
         options:
-          model: mxbai-embed-large
+          model: bge-m3
     vectorstore:
       oracle:
         initialize-schema: true

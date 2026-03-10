@@ -27,7 +27,7 @@ spring:
           temperature: 0.2
       embedding:
         options:
-          model: ${OLLAMA_EMBEDDING_MODEL:mxbai-embed-large}
+          model: ${OLLAMA_EMBEDDING_MODEL:bge-m3}
 
 logging:
   level:
