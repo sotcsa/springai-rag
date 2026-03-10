@@ -1,0 +1,19 @@
+# VCS
+.git
+.gitignore
+
+# Build outputs
+target
+
+# IDE/editor files
+.idea
+.vscode
+*.iml
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Runtime/env files
+.env
+*.log
